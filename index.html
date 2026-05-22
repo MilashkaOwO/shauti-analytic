@@ -3,17 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Шаути-Аналитик</title>
+    <title>Шаути-Аналитик | Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0f1c;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
             padding: 16px 12px 40px;
             color: #eef3ff;
+            min-height: 100vh;
         }
         .container { max-width: 500px; margin: 0 auto; }
+
+        .tabs {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 12px;
+            background: rgba(12, 18, 32, 0.9);
+            padding: 4px;
+            border-radius: 50px;
+            border: 1px solid rgba(90, 120, 240, 0.35);
+            flex-wrap: wrap;
+        }
+        .tab {
+            flex: 1;
+            min-width: 55px;
+            padding: 8px 3px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: #9aabdf;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 40px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #5f7aff, #7b8fff);
+            color: white;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .card {
             background: rgba(12, 18, 32, 0.9);
             border-radius: 1.5rem;
@@ -21,305 +59,1092 @@
             padding: 1rem;
             margin-bottom: 1rem;
         }
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 700;
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
             margin-bottom: 0.8rem;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
             background: linear-gradient(135deg, #fff, #b7c4ff);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 0.8rem; }
-        .param-card { background: #050b17; border-radius: 1rem; padding: 0.6rem; border-left: 3px solid #5f7aff; }
-        .param-label { font-size: 0.6rem; text-transform: uppercase; color: #9aabdf; margin-bottom: 3px; }
-        .value-large { font-size: 1.2rem; font-weight: 800; }
-        input[type="range"] { width: 100%; background: #192040; height: 4px; border-radius: 10px; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #8c9eff; border-radius: 50%; cursor: pointer; }
-        select { background: #050b17; border: 1px solid #2f3b68; border-radius: 2rem; padding: 5px 8px; color: white; width: 100%; font-size: 0.7rem; }
-        .result-block { background: #01040e; border-radius: 1rem; padding: 0.6rem; text-align: center; margin-top: 0.6rem; }
-        .ksh-number { font-size: 2.5rem; font-weight: 800; }
-        button { background: #5f7aff; border: none; padding: 8px 14px; border-radius: 2rem; font-weight: 600; color: white; cursor: pointer; margin-right: 6px; margin-top: 6px; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 0.6rem; }
-        .history-table th, .history-table td { padding: 5px 3px; border-bottom: 1px solid #202a4a; text-align: left; }
-        .positive { color: #a6ffbc; }
-        .negative { color: #ff9eaa; }
-        .graph-container { background: #030715; border-radius: 1rem; padding: 0.5rem; margin-top: 0.5rem; }
-        .flag-item { display: inline-flex; align-items: center; gap: 4px; margin: 4px 8px 4px 0; font-size: 0.65rem; cursor: pointer; background: #1a1f3a; padding: 3px 8px; border-radius: 20px; }
-        .cluster-badge { display: inline-block; padding: 3px 10px; border-radius: 40px; font-size: 0.65rem; font-weight: 600; margin-top: 5px; background: #1a1f3a; }
-        footer { text-align: center; font-size: 0.55rem; margin-top: 1rem; color: #5b6b9b; }
-        .goal-input { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-        input[type="number"] { background: #050b17; border: 1px solid #2f3b68; border-radius: 2rem; padding: 4px 8px; color: white; width: 80px; }
-        @keyframes pulse-gold {
-            0% { text-shadow: 0 0 0px #ffd700; transform: scale(1); }
-            50% { text-shadow: 0 0 20px #ffd700; transform: scale(1.05); }
-            100% { text-shadow: 0 0 0px #ffd700; transform: scale(1); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.8rem; }
+        .param-card {
+            background: #050b17;
+            border-radius: 0.8rem;
+            padding: 0.6rem;
+            border-left: 3px solid #5f7aff;
         }
-        .extra-class-animation { animation: pulse-gold 1.5s ease-in-out infinite; display: inline-block; }
+        .param-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #9aabdf;
+            margin-bottom: 3px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: linear-gradient(90deg, #5f7aff, #a88bff);
+            height: 4px;
+            border-radius: 10px;
+            -webkit-appearance: none;
+            margin: 6px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #8c9eff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .param-input {
+            background: rgba(10, 20, 40, 0.8);
+            border: 2px solid #2f3b68;
+            border-radius: 10px;
+            padding: 6px 8px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            width: 100%;
+            text-align: center;
+            -moz-appearance: textfield;
+        }
+        .param-input:focus { outline: none; border-color: #5f7aff; }
+        .param-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        .value-large { font-size: 1rem; font-weight: 800; margin-top: 3px; }
+
+        .quick-buttons { display: flex; gap: 2px; margin-top: 3px; }
+        .quick-btn {
+            background: #1a1f3a;
+            border: 1px solid #2f3b68;
+            color: #9aabdf;
+            padding: 2px 0;
+            font-size: 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        select {
+            background: #050b17;
+            border: 1px solid #2f3b68;
+            border-radius: 2rem;
+            padding: 6px;
+            color: white;
+            width: 100%;
+            font-size: 0.65rem;
+        }
+
+        .result-block {
+            background: linear-gradient(135deg, #01040e, #0a1230);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 0.6rem;
+        }
+        .ksh-number { font-size: 2.8rem; font-weight: 800; }
+        button {
+            background: linear-gradient(135deg, #5f7aff, #7b8fff);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 2rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        button.danger { background: linear-gradient(135deg, #ff5f5f, #ff7b7b); }
+        button.success { background: linear-gradient(135deg, #4caf84, #5fcf9f); }
+        button.small { padding: 4px 10px; font-size: 0.65rem; }
+        .flex-buttons { display: flex; gap: 6px; margin-top: 0.6rem; flex-wrap: wrap; }
+        .cluster-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 6px;
+            background: #1a1f3a;
+        }
+        footer { text-align: center; font-size: 0.55rem; margin-top: 1rem; color: #5b6b9b; }
+
+        .rater-row {
+            background: rgba(26, 31, 58, 0.4);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 6px;
+        }
+        .rater-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 4px;
+        }
+        .rater-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #b7c4ff;
+        }
+        .rater-ksh {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .compat-score {
+            font-size: 3rem;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        input[type="text"] {
+            background: #050b17;
+            border: 2px solid #2f3b68;
+            border-radius: 12px;
+            padding: 8px;
+            color: white;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+        input[type="text"]:focus { outline: none; border-color: #5f7aff; }
+
+        .settings-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(26, 31, 58, 0.5);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .settings-option label {
+            font-size: 0.8rem;
+            color: #b7c4ff;
+        }
+
+        /* Модальное окно */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #0a0f1c;
+            border: 1px solid rgba(90, 120, 240, 0.5);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-box h3 {
+            margin-bottom: 12px;
+            color: #b7c4ff;
+        }
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            margin: 12px 0;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+        }
+        .qr-container canvas, .qr-container img {
+            max-width: 200px;
+            max-height: 200px;
+        }
+        .close-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #2f3b68;
+            color: #9aabdf;
+            padding: 8px 20px;
+            border-radius: 2rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .import-section {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .import-section input {
+            flex: 1;
+            min-width: 150px;
+            font-size: 0.7rem;
+        }
+
+        /* Сканер камеры */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin: 12px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+        }
+        .scanner-container video {
+            width: 100%;
+            display: block;
+        }
+        .scanner-container canvas {
+            display: none;
+        }
+        .scanner-status {
+            font-size: 0.7rem;
+            color: #ffaa66;
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="card">
-        <div class="card-title">✨ Шаути-Аналитик</div>
-        
-        <div class="grid-3">
-            <div class="param-card">
-                <div class="param-label">👀 ВН (внешность)</div>
-                <input type="range" id="vn" min="0" max="10" step="0.5" value="7">
-                <div class="value-large"><span id="vnVal">7.0</span>/10</div>
+    <div class="tabs">
+        <button class="tab active" data-tab="solo">📊 Соло</button>
+        <button class="tab" data-tab="group">👥 Группа</button>
+        <button class="tab" data-tab="pair">💑 Пара</button>
+        <button class="tab" data-tab="settings">⚙️</button>
+    </div>
+
+    <!-- ==================== СОЛО ==================== -->
+    <div class="tab-content active" id="solo-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">✨ Шаути-Аналитик</div>
+                <span style="font-size:0.6rem;">v12.0</span>
             </div>
-            <div class="param-card">
-                <div class="param-label">🧠 Х (характер)</div>
-                <input type="range" id="x" min="0" max="10" step="0.5" value="6.5">
-                <div class="value-large"><span id="xVal">6.5</span>/10</div>
+
+            <div id="solo-sliders">
+                <div class="grid-3">
+                    <div class="param-card">
+                        <div class="param-label">👀 Внешность</div>
+                        <input type="range" id="solo-vn" min="0" max="10" step="0.1" value="7.0">
+                        <div class="value-large"><span id="solo-vn-val">7.0</span>/10</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">🧠 Характер</div>
+                        <input type="range" id="solo-x" min="-10" max="10" step="0.1" value="6.5">
+                        <div class="value-large"><span id="solo-x-val">6.5</span>/±10</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">💔 Драма</div>
+                        <input type="range" id="solo-d" min="0" max="10" step="0.1" value="4.5">
+                        <div class="value-large"><span id="solo-d-val">4.5</span>/10</div>
+                    </div>
+                </div>
             </div>
-            <div class="param-card">
-                <div class="param-label">💔 Д (драма)</div>
-                <input type="range" id="d" min="0" max="10" step="0.5" value="4.5">
-                <div class="value-large"><span id="dVal">4.5</span>/10</div>
+
+            <div id="solo-numbers" style="display:none;">
+                <div class="grid-3">
+                    <div class="param-card">
+                        <div class="param-label">👀 Внешность</div>
+                        <input type="number" id="solo-vn-num" class="param-input" min="0" max="10" step="0.1" value="7.0">
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-target="solo-vn" data-value="5">5</button>
+                            <button class="quick-btn" data-target="solo-vn" data-value="7">7</button>
+                            <button class="quick-btn" data-target="solo-vn" data-value="9">9</button>
+                            <button class="quick-btn" data-target="solo-vn" data-value="10">10</button>
+                        </div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">🧠 Характер</div>
+                        <input type="number" id="solo-x-num" class="param-input" min="-10" max="10" step="0.1" value="6.5">
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-target="solo-x" data-value="-5">-5</button>
+                            <button class="quick-btn" data-target="solo-x" data-value="0">0</button>
+                            <button class="quick-btn" data-target="solo-x" data-value="5">5</button>
+                            <button class="quick-btn" data-target="solo-x" data-value="10">10</button>
+                        </div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">💔 Драма</div>
+                        <input type="number" id="solo-d-num" class="param-input" min="0" max="10" step="0.1" value="4.5">
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-target="solo-d" data-value="2">2</button>
+                            <button class="quick-btn" data-target="solo-d" data-value="4">4</button>
+                            <button class="quick-btn" data-target="solo-d" data-value="7">7</button>
+                            <button class="quick-btn" data-target="solo-d" data-value="9">9</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div class="grid-3">
-            <select id="kn"><option value="1.0">Кн 1.0 обычная</option><option value="1.5" selected>Кн 1.5 редкая</option></select>
-            <select id="kx"><option value="0.5">Кх 0.5 убивает</option><option value="1.0" selected>Кх 1.0 баланс</option><option value="1.5">Кх 1.5 усиливает</option></select>
-            <select id="kd"><option value="0.5">Кд 0.5 нет</option><option value="1.0" selected>Кд 1.0 норма</option><option value="2.0">Кд 2.0 беда</option></select>
-        </div>
-        
-        <div class="result-block">
-            <div>🏆 KШаути</div>
-            <div class="ksh-number" id="kshValue">0.0</div>
-            <div id="clusterDisplay" class="cluster-badge">—</div>
-        </div>
-        
-        <div>
-            <button id="saveBtn">💾 Сохранить</button>
-            <button id="resetHistoryBtn">🗑️ Сброс</button>
+
+            <div class="grid-3" style="grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                <div>
+                    <div class="param-label" style="font-size:0.55rem;">🎯 Уник (U)</div>
+                    <select id="solo-U">
+                        <option value="0.5">0.5</option><option value="1.0">1.0</option>
+                        <option value="1.5" selected>1.5</option><option value="2.0">2.0</option><option value="2.5">2.5</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="param-label" style="font-size:0.55rem;">🎭 Хар (H)</div>
+                    <select id="solo-H">
+                        <option value="0.5">0.5</option><option value="1.0" selected>1.0</option>
+                        <option value="1.5">1.5</option><option value="2.0">2.0</option><option value="2.5">2.5</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="param-label" style="font-size:0.55rem;">⚠️ Драм (Δ)</div>
+                    <select id="solo-DD">
+                        <option value="0.5">0.5</option><option value="1.0" selected>1.0</option>
+                        <option value="1.5">1.5</option><option value="2.0">2.0</option><option value="3.0">3.0</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="result-block">
+                <div>🏆 KШаути</div>
+                <div class="ksh-number" id="solo-ksh">65.0</div>
+                <div id="solo-cluster" class="cluster-badge">🌟 ВЫСОКИЙ</div>
+            </div>
+
+            <div class="flex-buttons">
+                <button id="solo-export-btn" class="success">📤 Экспорт QR</button>
+                <button id="solo-copy-btn">📋 Копировать</button>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">🚩 Проблемы (каждый = -1)</div>
-        <div>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 🗣️ Постоянно жалуется</label>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 📱 Зависает в телефоне</label>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 💰 Ждёт что оплатишь</label>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 🎭 Меняет мнение</label>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 🔥 Конфликты на пустом месте</label>
-            <label class="flag-item"><input type="checkbox" class="redFlag"> 📞 Исчезает без объяснений</label>
-        </div>
-        <div class="goal-input">
-            <span>🎯 Цель KSh:</span>
-            <input type="number" id="goalKsh" step="0.5" placeholder="14">
-            <button id="setGoalBtn">Поставить</button>
-            <span id="goalAdvice" style="font-size:0.6rem;"></span>
+    <!-- ==================== ГРУППА ==================== -->
+    <div class="tab-content" id="group-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">👥 Групповая оценка</div>
+                <span style="font-size:0.6rem;">v12.0</span>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label style="font-size:0.7rem; color:#9aabdf;">Имя оцениваемого:</label>
+                <input type="text" id="group-name" placeholder="Например: Алиса" value="Алиса">
+            </div>
+
+            <div id="group-raters"></div>
+
+            <div class="flex-buttons" style="margin-top:8px;">
+                <button id="add-rater-btn">+ Добавить</button>
+                <button id="group-import-btn" class="success">📥 Импорт QR</button>
+            </div>
+
+            <div class="result-block" style="margin-top:12px;">
+                <div>📊 Средний KSh группы</div>
+                <div class="ksh-number" id="group-avg-ksh">—</div>
+                <div id="group-cluster" class="cluster-badge">—</div>
+                <div style="font-size:0.65rem; color:#9aabdf; margin-top:4px;">
+                    Разброс: <span id="group-spread">—</span>
+                </div>
+            </div>
+
+            <div class="flex-buttons">
+                <button id="group-save-btn">💾 Сохранить</button>
+                <button id="group-load-btn">📂 Загрузить</button>
+                <button id="group-clear-btn" class="danger">🗑️ Очистить</button>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">📈 Динамика</div>
-        <div class="graph-container"><canvas id="derivativeChart" height="120"></canvas></div>
-        <div id="trendAlert" style="font-size:0.6rem; margin-top:6px; color:#ffaa66;">📌 Сохраните несколько замеров</div>
-        <div style="overflow-x:auto; margin-top:8px;">
-            <table class="history-table" id="historyTable">
-                <thead><tr><th>Дата</th><th>ВН</th><th>Х</th><th>Д</th><th>KSh</th><th>Δ</th></tr></thead>
-                <tbody id="historyTbody"><tr><td colspan="6">Нет записей</td></tr></tbody>
-            </table>
+    <!-- ==================== ПАРА ==================== -->
+    <div class="tab-content" id="pair-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💑 Совместимость (SCI)</div>
+                <span style="font-size:0.6rem;">v12.0</span>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <div style="text-align:center; font-weight:700; color:#b7c4ff; margin-bottom:6px;">Партнёр 1</div>
+                    <div class="param-card" style="margin-bottom:4px;">
+                        <div class="param-label">👀 Внешность</div>
+                        <input type="range" id="p1-vn" min="0" max="10" step="0.1" value="7.0">
+                        <div class="value-large"><span id="p1-vn-val">7.0</span></div>
+                    </div>
+                    <div class="param-card" style="margin-bottom:4px;">
+                        <div class="param-label">🧠 Характер</div>
+                        <input type="range" id="p1-x" min="-10" max="10" step="0.1" value="6.0">
+                        <div class="value-large"><span id="p1-x-val">6.0</span></div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">💔 Драма</div>
+                        <input type="range" id="p1-d" min="0" max="10" step="0.1" value="3.0">
+                        <div class="value-large"><span id="p1-d-val">3.0</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="text-align:center; font-weight:700; color:#ffb7c5; margin-bottom:6px;">Партнёр 2</div>
+                    <div class="param-card" style="margin-bottom:4px;">
+                        <div class="param-label">👀 Внешность</div>
+                        <input type="range" id="p2-vn" min="0" max="10" step="0.1" value="8.0">
+                        <div class="value-large"><span id="p2-vn-val">8.0</span></div>
+                    </div>
+                    <div class="param-card" style="margin-bottom:4px;">
+                        <div class="param-label">🧠 Характер</div>
+                        <input type="range" id="p2-x" min="-10" max="10" step="0.1" value="7.0">
+                        <div class="value-large"><span id="p2-x-val">7.0</span></div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">💔 Драма</div>
+                        <input type="range" id="p2-d" min="0" max="10" step="0.1" value="2.0">
+                        <div class="value-large"><span id="p2-d-val">2.0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:10px; font-size:0.65rem; color:#9aabdf; text-align:center;">
+                Веса: α (внешность) β (характер) γ (драма)
+            </div>
+            <div class="grid-3" style="gap:6px;">
+                <select id="pair-alpha">
+                    <option value="0.1">α=0.1</option><option value="0.2" selected>α=0.2</option>
+                    <option value="0.3">α=0.3</option><option value="0.4">α=0.4</option>
+                </select>
+                <select id="pair-beta">
+                    <option value="0.3">β=0.3</option><option value="0.4">β=0.4</option>
+                    <option value="0.5" selected>β=0.5</option><option value="0.6">β=0.6</option>
+                </select>
+                <select id="pair-gamma">
+                    <option value="0.1">γ=0.1</option><option value="0.2">γ=0.2</option>
+                    <option value="0.3" selected>γ=0.3</option><option value="0.4">γ=0.4</option>
+                </select>
+            </div>
+
+            <div class="result-block" style="margin-top:10px;">
+                <div>💑 Индекс совместимости</div>
+                <div class="compat-score" id="pair-sci">—</div>
+                <div id="pair-verdict" class="cluster-badge">—</div>
+            </div>
+
+            <div class="graph-container" style="background:#030715; border-radius:1rem; padding:0.5rem; margin-top:0.5rem;">
+                <canvas id="radarChart" height="200"></canvas>
+            </div>
         </div>
     </div>
-    <footer>Шаути-Аналитик · Данные сохраняются локально</footer>
+
+    <!-- ==================== НАСТРОЙКИ ==================== -->
+    <div class="tab-content" id="settings-tab">
+        <div class="card">
+            <div class="card-title" style="font-size:1.1rem; margin-bottom:15px;">⚙️ Настройки ввода</div>
+
+            <div class="settings-option">
+                <label>🎛️ Способ ввода:</label>
+                <select id="input-mode-select">
+                    <option value="slider" selected>🎚️ Ползунки</option>
+                    <option value="keyboard">⌨️ Клавиатура</option>
+                </select>
+            </div>
+
+            <div class="settings-option">
+                <label>📊 Шаг изменения:</label>
+                <select id="step-select">
+                    <option value="0.1" selected>0.1 (точный)</option>
+                    <option value="0.5">0.5 (стандартный)</option>
+                    <option value="1.0">1.0 (быстрый)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title" style="font-size:1.1rem; margin-bottom:15px;">📥 Импорт / Экспорт</div>
+
+            <div class="settings-option">
+                <label>🔗 Импорт по ссылке:</label>
+            </div>
+            <div class="import-section" style="margin-bottom:12px;">
+                <input type="text" id="import-link-input" placeholder="SHAUTHI://...">
+                <button id="import-link-btn" class="success">📥 Импорт</button>
+            </div>
+
+            <div class="settings-option">
+                <label>📋 Буфер обмена:</label>
+            </div>
+            <div class="import-section" style="margin-bottom:12px;">
+                <button id="paste-clipboard-btn">📋 Вставить из буфера</button>
+            </div>
+
+            <div class="settings-option">
+                <label>📷 Сканировать QR камерой:</label>
+            </div>
+            <button id="scan-qr-btn" class="success" style="width:100%;">📷 Открыть сканер</button>
+
+            <div id="import-status" style="font-size:0.7rem; color:#88ffaa; margin-top:8px;"></div>
+        </div>
+    </div>
+
+    <!-- ==================== МОДАЛЬНОЕ ОКНО QR (ЭКСПОРТ) ==================== -->
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal-box">
+            <h3 id="qr-modal-title">📤 Поделиться оценкой</h3>
+            <div class="qr-container" id="qr-container"></div>
+            <p style="font-size:0.65rem; color:#9aabdf; word-break:break-all;" id="qr-link-text"></p>
+            <button class="close-btn" id="qr-close-btn">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- ==================== МОДАЛЬНОЕ ОКНО СКАНЕРА ==================== -->
+    <div class="modal-overlay" id="scanner-modal">
+        <div class="modal-box">
+            <h3>📷 Сканирование QR</h3>
+            <div class="scanner-container">
+                <video id="scanner-video" autoplay playsinline></video>
+                <canvas id="scanner-canvas"></canvas>
+            </div>
+            <p class="scanner-status" id="scanner-status">Наведите камеру на QR-код</p>
+            <button class="close-btn" id="scanner-close-btn">Закрыть</button>
+        </div>
+    </div>
+
+    <footer>Шаути-Аналитик v12.0 · Соло · Группа · Пара · Настройки</footer>
 </div>
 
 <script>
-    let measurements = [];
-    let chartInstance = null;
-    
-    function computeKSh(v, xv, dv, knV, kxV, kdV) {
-        return (v * knV) + (xv * kxV) - (dv * kdV);
+    // ==================== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ====================
+    let currentMode = 'slider';
+    let currentStep = 0.1;
+
+    // ==================== ОБЩИЕ ФУНКЦИИ ====================
+    function kshFormula(vn, x, d, U, H, Δ) {
+        const beauty = (vn - 5) * U * 5;
+        const char = x * H * 2.5;
+        const drama = d * Δ * 1.5;
+        return Math.max(0, 50 + beauty + char - drama);
     }
-    
-    function getCurrentRaw() {
-        return {
-            vn: parseFloat(document.getElementById('vn').value),
-            x: parseFloat(document.getElementById('x').value),
-            d: parseFloat(document.getElementById('d').value),
-            kn: parseFloat(document.getElementById('kn').value),
-            kx: parseFloat(document.getElementById('kx').value),
-            kd: parseFloat(document.getElementById('kd').value)
-        };
+
+    function getCluster(vn, x, d, ksh) {
+        if (ksh >= 90) return { name: '💎 ЭКСТРАКЛАСС', color: '#ffd700' };
+        if (ksh >= 80) return { name: '👑 ПРЕМИУМ', color: '#ff69b4' };
+        if (vn >= 8.5 && x >= 7 && d <= 2.5) return { name: '👼 АНГЕЛ', color: '#88aaff' };
+        if (ksh >= 70) return { name: '🌟 ВЫСОКИЙ', color: '#c0c0c0' };
+        if (vn >= 8 && d >= 7) return { name: '🔥 ТОКСИН', color: '#ff6666' };
+        if (x >= 7.5 && d <= 3.5) return { name: '💛 ЗОЛОТО', color: '#88ffaa' };
+        if (x <= -7) return { name: '😈 ДЕМОН', color: '#ff4444' };
+        if (d >= 7) return { name: '⚠️ ДРАМА', color: '#ff4444' };
+        if (ksh >= 55) return { name: '📊 СРЕДНИЙ', color: '#aaaaff' };
+        if (ksh >= 40) return { name: '📉 НИЗКИЙ', color: '#ffaa88' };
+        return { name: '💀 КРИТИЧЕСКИЙ', color: '#ff4444' };
     }
-    
-    function getFlagsPenalty() {
-        let p = 0;
-        document.querySelectorAll('.redFlag').forEach(f => { if (f.checked) p += 1; });
-        return p;
+
+    function kshColor(ksh) {
+        if (ksh >= 80) return '#ffd700';
+        if (ksh >= 70) return '#c0c0c0';
+        if (ksh >= 55) return '#88aaff';
+        if (ksh >= 40) return '#ffaa88';
+        return '#ff4444';
     }
-    
-    function getFinalKsh() {
-        let r = getCurrentRaw();
-        let raw = computeKSh(r.vn, r.x, r.d, r.kn, r.kx, r.kd);
-        return Math.max(0, raw - getFlagsPenalty());
+
+    function packRaterData(vn, x, d, U, H, Δ, name) {
+        const data = { vn, x, d, U, H, Δ, name: name || 'Оценщик' };
+        return 'SHAUTHI://' + btoa(encodeURIComponent(JSON.stringify(data)));
     }
-    
-    function getClusterType(vnVal, xVal, dVal, kshVal) {
-        if (kshVal >= 19) return { name: '💎 ЭКСТРАКЛАСС', color: '#ffd700' };
-        if (kshVal >= 15) return { name: '🌟 ВЫСОКИЙ КЛАСС', color: '#c0c0c0' };
-        if (vnVal >= 8 && xVal >= 7 && dVal <= 3) return { name: '👼 АНГЕЛ', color: '#88aaff' };
-        if (vnVal >= 8 && dVal >= 7) return { name: '🔥 ТОКСИН', color: '#ff8888' };
-        if (xVal >= 7 && dVal <= 4) return { name: '💛 ЗОЛОТАЯ СЕРЕДИНА', color: '#88ffaa' };
-        if (dVal >= 7) return { name: '⚠️ ДРАМА-КВИН', color: '#ff6666' };
-        return { name: '📊 СРЕДНИЙ ТИП', color: '#aaaaff' };
+
+    function unpackRaterData(str) {
+        try {
+            const clean = str.replace('SHAUTHI://', '').trim();
+            return JSON.parse(decodeURIComponent(atob(clean)));
+        } catch(e) {
+            return null;
+        }
     }
-    
-    function updateAllUI() {
-        let r = getCurrentRaw();
-        let finalKsh = getFinalKsh();
-        
-        document.getElementById('vnVal').innerText = r.vn.toFixed(1);
-        document.getElementById('xVal').innerText = r.x.toFixed(1);
-        document.getElementById('dVal').innerText = r.d.toFixed(1);
-        
-        let kshSpan = document.getElementById('kshValue');
-        kshSpan.innerText = finalKsh.toFixed(1);
-        
-        let cluster = getClusterType(r.vn, r.x, r.d, finalKsh);
-        let clusterSpan = document.getElementById('clusterDisplay');
-        clusterSpan.innerHTML = cluster.name;
-        clusterSpan.style.border = `1px solid ${cluster.color}`;
-        
-        if (finalKsh >= 19) {
-            kshSpan.classList.add('extra-class-animation');
+
+    function generateQR(containerId, dataString) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        new QRCode(container, {
+            text: dataString,
+            width: 180,
+            height: 180,
+            colorDark: '#0a0f1c',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }
+
+    // ==================== ВКЛАДКИ ====================
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            if (tab.dataset.tab === 'pair') updateRadar();
+        });
+    });
+
+    // ==================== МОДАЛЬНОЕ ОКНО QR (ЭКСПОРТ) ====================
+    const qrModal = document.getElementById('qr-modal');
+    document.getElementById('qr-close-btn').addEventListener('click', () => qrModal.classList.remove('show'));
+    qrModal.addEventListener('click', (e) => { if (e.target === qrModal) qrModal.classList.remove('show'); });
+
+    function showQRModal(title, dataString) {
+        document.getElementById('qr-modal-title').textContent = title;
+        document.getElementById('qr-link-text').textContent = dataString;
+        generateQR('qr-container', dataString);
+        qrModal.classList.add('show');
+    }
+
+    // ==================== МОДАЛЬНОЕ ОКНО СКАНЕРА ====================
+    const scannerModal = document.getElementById('scanner-modal');
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerCanvas = document.getElementById('scanner-canvas');
+    const scannerStatus = document.getElementById('scanner-status');
+    const scannerCtx = scannerCanvas.getContext('2d');
+    let scannerStream = null;
+    let scanInterval = null;
+
+    document.getElementById('scanner-close-btn').addEventListener('click', stopScanner);
+    scannerModal.addEventListener('click', (e) => { if (e.target === scannerModal) stopScanner(); });
+
+    async function startScanner() {
+        try {
+            scannerStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+            scannerVideo.srcObject = scannerStream;
+            scannerVideo.play();
+            scannerStatus.textContent = 'Наведите камеру на QR-код';
+            scannerModal.classList.add('show');
+            startScanLoop();
+        } catch(e) {
+            alert('❌ Нет доступа к камере. Проверьте разрешения.');
+            scannerModal.classList.remove('show');
+        }
+    }
+
+    function stopScanner() {
+        if (scanInterval) clearInterval(scanInterval);
+        if (scannerStream) {
+            scannerStream.getTracks().forEach(t => t.stop());
+            scannerStream = null;
+        }
+        scannerVideo.srcObject = null;
+        scannerModal.classList.remove('show');
+    }
+
+    function startScanLoop() {
+        scanInterval = setInterval(() => {
+            if (scannerVideo.readyState === scannerVideo.HAVE_ENOUGH_DATA) {
+                const w = scannerVideo.videoWidth;
+                const h = scannerVideo.videoHeight;
+                scannerCanvas.width = w;
+                scannerCanvas.height = h;
+                scannerCtx.drawImage(scannerVideo, 0, 0, w, h);
+                const imageData = scannerCtx.getImageData(0, 0, w, h);
+                const code = jsQR(imageData.data, w, h, { inversionAttempts: 'dontInvert' });
+                if (code && code.data.startsWith('SHAUTHI://')) {
+                    stopScanner();
+                    if (importRaterToGroup(code.data)) {
+                        alert('✅ QR распознан! Оценщик добавлен в Группу.');
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tabContents.forEach(c => c.classList.remove('active'));
+                        document.querySelector('[data-tab="group"]').classList.add('active');
+                        document.getElementById('group-tab').classList.add('active');
+                    }
+                }
+            }
+        }, 200);
+    }
+
+    // ==================== СОЛО ====================
+    const soloVn = document.getElementById('solo-vn');
+    const soloX = document.getElementById('solo-x');
+    const soloD = document.getElementById('solo-d');
+    const soloVnNum = document.getElementById('solo-vn-num');
+    const soloXNum = document.getElementById('solo-x-num');
+    const soloDNum = document.getElementById('solo-d-num');
+    const soloVnVal = document.getElementById('solo-vn-val');
+    const soloXVal = document.getElementById('solo-x-val');
+    const soloDVal = document.getElementById('solo-d-val');
+    const soloU = document.getElementById('solo-U');
+    const soloH = document.getElementById('solo-H');
+    const soloDD = document.getElementById('solo-DD');
+    const soloKsh = document.getElementById('solo-ksh');
+    const soloCluster = document.getElementById('solo-cluster');
+    const soloSliders = document.getElementById('solo-sliders');
+    const soloNumbers = document.getElementById('solo-numbers');
+
+    function syncSoloFromSliders() {
+        soloVnNum.value = parseFloat(soloVn.value).toFixed(1);
+        soloXNum.value = parseFloat(soloX.value).toFixed(1);
+        soloDNum.value = parseFloat(soloD.value).toFixed(1);
+    }
+
+    function syncSoloFromNumbers() {
+        soloVn.value = parseFloat(soloVnNum.value) || 0;
+        soloX.value = parseFloat(soloXNum.value) || 0;
+        soloD.value = parseFloat(soloDNum.value) || 0;
+    }
+
+    function getSoloData() {
+        if (currentMode === 'slider') {
+            return {
+                vn: parseFloat(soloVn.value),
+                x: parseFloat(soloX.value),
+                d: parseFloat(soloD.value),
+                U: parseFloat(soloU.value),
+                H: parseFloat(soloH.value),
+                Δ: parseFloat(soloDD.value)
+            };
         } else {
-            kshSpan.classList.remove('extra-class-animation');
-        }
-        
-        let goal = parseFloat(document.getElementById('goalKsh').value);
-        let adviceSpan = document.getElementById('goalAdvice');
-        if (!isNaN(goal)) {
-            adviceSpan.innerHTML = finalKsh < goal ? `📉 До цели: ${(goal - finalKsh).toFixed(1)}` : '✅ Цель достигнута!';
+            return {
+                vn: Math.min(10, Math.max(0, parseFloat(soloVnNum.value) || 0)),
+                x: Math.min(10, Math.max(-10, parseFloat(soloXNum.value) || 0)),
+                d: Math.min(10, Math.max(0, parseFloat(soloDNum.value) || 0)),
+                U: parseFloat(soloU.value),
+                H: parseFloat(soloH.value),
+                Δ: parseFloat(soloDD.value)
+            };
         }
     }
-    
-    function saveMeasurement() {
-        let r = getCurrentRaw();
-        let finalKsh = getFinalKsh();
-        let cluster = getClusterType(r.vn, r.x, r.d, finalKsh);
-        let now = new Date();
-        
-        let entry = {
-            id: Date.now(),
-            date: now.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
-            timestamp: now.getTime(),
-            vn: r.vn, x: r.x, d: r.d,
-            kn: r.kn, kx: r.kx, kd: r.kd,
-            ksh: finalKsh,
-            penalty: getFlagsPenalty(),
-            cluster: cluster.name
+
+    function updateSolo() {
+        if (currentMode === 'slider') {
+            soloVnVal.textContent = parseFloat(soloVn.value).toFixed(1);
+            soloXVal.textContent = parseFloat(soloX.value).toFixed(1);
+            soloDVal.textContent = parseFloat(soloD.value).toFixed(1);
+        } else {
+            soloVnVal.textContent = parseFloat(soloVnNum.value).toFixed(1);
+            soloXVal.textContent = parseFloat(soloXNum.value).toFixed(1);
+            soloDVal.textContent = parseFloat(soloDNum.value).toFixed(1);
+        }
+
+        const v = getSoloData();
+        const ksh = kshFormula(v.vn, v.x, v.d, v.U, v.H, v.Δ);
+        soloKsh.textContent = ksh.toFixed(1);
+        soloKsh.style.color = kshColor(ksh);
+
+        const cluster = getCluster(v.vn, v.x, v.d, ksh);
+        soloCluster.textContent = cluster.name;
+        soloCluster.style.border = `2px solid ${cluster.color}`;
+        soloCluster.style.color = cluster.color;
+    }
+
+    [soloVn, soloX, soloD].forEach(el => el.addEventListener('input', () => { syncSoloFromSliders(); updateSolo(); }));
+    [soloVnNum, soloXNum, soloDNum].forEach(el => el.addEventListener('input', () => { syncSoloFromNumbers(); updateSolo(); }));
+    [soloU, soloH, soloDD].forEach(el => el.addEventListener('change', updateSolo));
+
+    document.getElementById('solo-export-btn').addEventListener('click', () => {
+        const v = getSoloData();
+        const dataStr = packRaterData(v.vn, v.x, v.d, v.U, v.H, v.Δ, 'Я');
+        showQRModal('📤 Моя оценка', dataStr);
+    });
+
+    document.getElementById('solo-copy-btn').addEventListener('click', () => {
+        const v = getSoloData();
+        const dataStr = packRaterData(v.vn, v.x, v.d, v.U, v.H, v.Δ, 'Я');
+        navigator.clipboard.writeText(dataStr).then(() => {
+            alert('✅ Ссылка скопирована! Отправьте её другому человеку.');
+        }).catch(() => {
+            prompt('Скопируйте ссылку:', dataStr);
+        });
+    });
+
+    document.querySelectorAll('.quick-btn[data-target="solo-vn"]').forEach(btn => {
+        btn.addEventListener('click', () => { soloVnNum.value = btn.dataset.value; syncSoloFromNumbers(); updateSolo(); });
+    });
+    document.querySelectorAll('.quick-btn[data-target="solo-x"]').forEach(btn => {
+        btn.addEventListener('click', () => { soloXNum.value = btn.dataset.value; syncSoloFromNumbers(); updateSolo(); });
+    });
+    document.querySelectorAll('.quick-btn[data-target="solo-d"]').forEach(btn => {
+        btn.addEventListener('click', () => { soloDNum.value = btn.dataset.value; syncSoloFromNumbers(); updateSolo(); });
+    });
+
+    function setSoloMode(mode) {
+        currentMode = mode;
+        soloSliders.style.display = mode === 'slider' ? 'block' : 'none';
+        soloNumbers.style.display = mode === 'keyboard' ? 'block' : 'none';
+        if (mode === 'keyboard') syncSoloFromSliders();
+        else syncSoloFromNumbers();
+        updateSolo();
+    }
+
+    updateSolo();
+
+    // ==================== ГРУППА ====================
+    let groupRaters = [];
+    let raterCounter = 0;
+
+    const groupNameInput = document.getElementById('group-name');
+    const groupRatersDiv = document.getElementById('group-raters');
+    const groupAvgKsh = document.getElementById('group-avg-ksh');
+    const groupCluster = document.getElementById('group-cluster');
+    const groupSpread = document.getElementById('group-spread');
+
+    function createRater(id, data = null) {
+        if (data) {
+            return {
+                id: id,
+                name: data.name || 'Импорт',
+                vn: data.vn, x: data.x, d: data.d,
+                U: data.U, H: data.H, Δ: data.Δ
+            };
+        }
+        return {
+            id: id,
+            name: 'Оценщик ' + (id + 1),
+            vn: 7.0, x: 6.0, d: 3.0,
+            U: 1.5, H: 1.0, Δ: 1.0
         };
-        
-        measurements.unshift(entry);
-        if (measurements.length > 30) measurements.pop();
-        
-        localStorage.setItem('shauthi_app', JSON.stringify(measurements));
-        renderHistoryAndGraph();
-        updateAllUI();
-        document.getElementById('trendAlert').innerHTML = '✅ Замер сохранён!';
     }
-    
-    function renderHistoryAndGraph() {
-        let historyTbody = document.getElementById('historyTbody');
-        
-        if (!measurements.length) {
-            historyTbody.innerHTML = '<tr><td colspan="6">Нет записей</td></tr>';
-            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+    function renderGroupRaters() {
+        let html = '';
+        groupRaters.forEach((r) => {
+            const ksh = kshFormula(r.vn, r.x, r.d, r.U, r.H, r.Δ);
+            html += `
+            <div class="rater-row">
+                <div class="rater-header">
+                    <input type="text" value="${r.name}" data-id="${r.id}" class="rater-name-input" style="width:100px; font-size:0.7rem; padding:4px 6px;">
+                    <span class="rater-ksh" style="color:${kshColor(ksh)}">KSh: ${ksh.toFixed(1)}</span>
+                    <button class="small danger" data-action="remove" data-id="${r.id}">✕</button>
+                </div>
+                <div class="grid-3" style="gap:3px;">
+                    <div><div class="param-label" style="font-size:0.45rem;">ВН</div><input type="range" min="0" max="10" step="0.1" value="${r.vn}" data-id="${r.id}" data-param="vn" class="rater-slider"><span style="font-size:0.55rem;">${r.vn.toFixed(1)}</span></div>
+                    <div><div class="param-label" style="font-size:0.45rem;">Х</div><input type="range" min="-10" max="10" step="0.1" value="${r.x}" data-id="${r.id}" data-param="x" class="rater-slider"><span style="font-size:0.55rem;">${r.x.toFixed(1)}</span></div>
+                    <div><div class="param-label" style="font-size:0.45rem;">Д</div><input type="range" min="0" max="10" step="0.1" value="${r.d}" data-id="${r.id}" data-param="d" class="rater-slider"><span style="font-size:0.55rem;">${r.d.toFixed(1)}</span></div>
+                </div>
+            </div>`;
+        });
+        groupRatersDiv.innerHTML = html || '<div style="text-align:center; color:#5b6b9b; padding:20px;">Нет оценщиков. Нажмите «+ Добавить»</div>';
+
+        document.querySelectorAll('.rater-slider').forEach(slider => {
+            slider.addEventListener('input', () => {
+                const id = parseInt(slider.dataset.id);
+                const param = slider.dataset.param;
+                const rater = groupRaters.find(r => r.id === id);
+                if (rater) { rater[param] = parseFloat(slider.value); updateGroupStats(); renderGroupRaters(); }
+            });
+        });
+
+        document.querySelectorAll('.rater-name-input').forEach(inp => {
+            inp.addEventListener('input', () => {
+                const id = parseInt(inp.dataset.id);
+                const rater = groupRaters.find(r => r.id === id);
+                if (rater) rater.name = inp.value;
+            });
+        });
+
+        document.querySelectorAll('[data-action="remove"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                groupRaters = groupRaters.filter(r => r.id !== id);
+                updateGroupStats();
+                renderGroupRaters();
+            });
+        });
+
+        updateGroupStats();
+    }
+
+    function updateGroupStats() {
+        if (groupRaters.length === 0) {
+            groupAvgKsh.textContent = '—';
+            groupCluster.textContent = '—';
+            groupSpread.textContent = '—';
             return;
         }
-        
-        let html = '';
-        for (let i = 0; i < measurements.length; i++) {
-            let m = measurements[i];
-            let delta = '';
-            if (i < measurements.length - 1) {
-                let diff = m.ksh - measurements[i + 1].ksh;
-                delta = `<span class="${diff >= 0 ? 'positive' : 'negative'}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}</span>`;
-            } else { delta = '—'; }
-            html += `<tr><td>${m.date}</td><td>${m.vn.toFixed(1)}</td><td>${m.x.toFixed(1)}</td><td>${m.d.toFixed(1)}</td><td><strong>${m.ksh.toFixed(1)}</strong></td><td>${delta}</td></tr>`;
-        }
-        historyTbody.innerHTML = html;
-        
-        let sorted = [...measurements].sort((a, b) => a.timestamp - b.timestamp);
-        if (sorted.length < 2) return;
-        
-        let labels = [], deriv = [];
-        for (let i = 1; i < sorted.length; i++) {
-            labels.push(sorted[i].date.slice(0, 5));
-            deriv.push(sorted[i].ksh - sorted[i - 1].ksh);
-        }
-        
-        const ctx = document.getElementById('derivativeChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels, datasets: [{ label: 'ΔKSh', data: deriv, borderColor: '#8f9eff', backgroundColor: 'rgba(100,130,255,0.1)', borderWidth: 2, pointRadius: 3, fill: true }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#ccd6ff', font: { size: 9 } } } } }
-        });
-        
-        let sorted2 = [...measurements].sort((a, b) => a.timestamp - b.timestamp);
-        if (sorted2.length >= 3) {
-            let d1 = sorted2[sorted2.length-1].ksh - sorted2[sorted2.length-2].ksh;
-            let d2 = sorted2[sorted2.length-2].ksh - sorted2[sorted2.length-3].ksh;
-            let alertSpan = document.getElementById('trendAlert');
-            if (d1 < 0 && d2 < 0) alertSpan.innerHTML = '🚨 ДВА ПАДЕНИЯ ПОДРЯД!';
-            else if (d1 < 0) alertSpan.innerHTML = '📉 Последний замер упал';
-            else alertSpan.innerHTML = '📈 Тренд положительный';
-        }
+        const avgVn = groupRaters.reduce((s, r) => s + r.vn, 0) / groupRaters.length;
+        const avgX = groupRaters.reduce((s, r) => s + r.x, 0) / groupRaters.length;
+        const avgD = groupRaters.reduce((s, r) => s + r.d, 0) / groupRaters.length;
+        const avgU = groupRaters.reduce((s, r) => s + r.U, 0) / groupRaters.length;
+        const avgH = groupRaters.reduce((s, r) => s + r.H, 0) / groupRaters.length;
+        const avgDD = groupRaters.reduce((s, r) => s + r.Δ, 0) / groupRaters.length;
+        const avgKsh = kshFormula(avgVn, avgX, avgD, avgU, avgH, avgDD);
+        groupAvgKsh.textContent = avgKsh.toFixed(1);
+        groupAvgKsh.style.color = kshColor(avgKsh);
+        const cluster = getCluster(avgVn, avgX, avgD, avgKsh);
+        groupCluster.textContent = cluster.name;
+        groupCluster.style.border = `2px solid ${cluster.color}`;
+        groupCluster.style.color = cluster.color;
+        const kshes = groupRaters.map(r => kshFormula(r.vn, r.x, r.d, r.U, r.H, r.Δ));
+        groupSpread.textContent = `±${((Math.max(...kshes) - Math.min(...kshes)) / 2).toFixed(1)}`;
     }
-    
-    function resetHistory() {
-        if (confirm('Удалить всю историю?')) {
-            measurements = [];
-            localStorage.removeItem('shauthi_app');
-            renderHistoryAndGraph();
-            updateAllUI();
-            document.getElementById('trendAlert').innerHTML = '📌 История очищена';
+
+    function importRaterToGroup(dataStr) {
+        const data = unpackRaterData(dataStr);
+        if (!data || data.vn === undefined) {
+            alert('❌ Неверный формат данных');
+            return false;
         }
+        groupRaters.push(createRater(raterCounter++, data));
+        renderGroupRaters();
+        return true;
     }
-    
-    function loadData() {
-        let stored = localStorage.getItem('shauthi_app');
+
+    document.getElementById('add-rater-btn').addEventListener('click', () => {
+        groupRaters.push(createRater(raterCounter++));
+        renderGroupRaters();
+    });
+
+    document.getElementById('group-import-btn').addEventListener('click', () => {
+        const link = prompt('Вставьте ссылку SHAUTHI://... или отсканируйте QR:');
+        if (link) importRaterToGroup(link);
+    });
+
+    document.getElementById('group-save-btn').addEventListener('click', () => {
+        localStorage.setItem('shauthi_group_session', JSON.stringify({ name: groupNameInput.value, raters: groupRaters }));
+        alert('✅ Сессия сохранена!');
+    });
+
+    document.getElementById('group-load-btn').addEventListener('click', () => {
+        const stored = localStorage.getItem('shauthi_group_session');
         if (stored) {
-            try {
-                measurements = JSON.parse(stored);
-            } catch(e) { measurements = []; }
-        }
-        if (measurements.length === 0) {
-            let now = new Date();
-            measurements = [{
-                id: 1,
-                date: now.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
-                timestamp: now.getTime(),
-                vn: 7.5, x: 6.5, d: 4.0, kn: 1.5, kx: 1.0, kd: 1.0,
-                ksh: (7.5*1.5)+(6.5*1)-(4.0*1), penalty: 0, cluster: '🌟 ВЫСОКИЙ КЛАСС'
-            }];
-            localStorage.setItem('shauthi_app', JSON.stringify(measurements));
-        }
-        renderHistoryAndGraph();
-        updateAllUI();
+            const session = JSON.parse(stored);
+            groupNameInput.value = session.name;
+            groupRaters = session.raters;
+            raterCounter = Math.max(...groupRaters.map(r => r.id), -1) + 1;
+            renderGroupRaters();
+        } else { alert('Нет сохранённой сессии'); }
+    });
+
+    document.getElementById('group-clear-btn').addEventListener('click', () => {
+        if (confirm('Очистить всех оценщиков?')) { groupRaters = []; raterCounter = 0; renderGroupRaters(); }
+    });
+
+    groupRaters.push(createRater(raterCounter++));
+    groupRaters.push(createRater(raterCounter++));
+    renderGroupRaters();
+
+    // ==================== ПАРА ====================
+    const p1Vn = document.getElementById('p1-vn'), p1X = document.getElementById('p1-x'), p1D = document.getElementById('p1-d');
+    const p2Vn = document.getElementById('p2-vn'), p2X = document.getElementById('p2-x'), p2D = document.getElementById('p2-d');
+    const pairAlpha = document.getElementById('pair-alpha'), pairBeta = document.getElementById('pair-beta'), pairGamma = document.getElementById('pair-gamma');
+    const pairSci = document.getElementById('pair-sci'), pairVerdict = document.getElementById('pair-verdict');
+    let radarInstance = null;
+
+    function updatePair() {
+        document.getElementById('p1-vn-val').textContent = parseFloat(p1Vn.value).toFixed(1);
+        document.getElementById('p1-x-val').textContent = parseFloat(p1X.value).toFixed(1);
+        document.getElementById('p1-d-val').textContent = parseFloat(p1D.value).toFixed(1);
+        document.getElementById('p2-vn-val').textContent = parseFloat(p2Vn.value).toFixed(1);
+        document.getElementById('p2-x-val').textContent = parseFloat(p2X.value).toFixed(1);
+        document.getElementById('p2-d-val').textContent = parseFloat(p2D.value).toFixed(1);
+
+        const b1 = parseFloat(p1Vn.value), c1 = parseFloat(p1X.value), d1 = parseFloat(p1D.value);
+        const b2 = parseFloat(p2Vn.value), c2 = parseFloat(p2X.value), d2 = parseFloat(p2D.value);
+        const α = parseFloat(pairAlpha.value), β = parseFloat(pairBeta.value), γ = parseFloat(pairGamma.value);
+
+        const M_Beauty = 1 - Math.abs(b1 - b2) / 10;
+        const M_Char = ((Math.min(c1, c2) + 10) / 20) * (1 - Math.abs(c1 - c2) / 20);
+        const M_Drama = 1 - (d1 * d2) / 100;
+        const sci = (α * M_Beauty + β * M_Char + γ * M_Drama) * 100;
+
+        pairSci.textContent = sci.toFixed(1) + '%';
+        let verdict, color;
+        if (sci >= 85) { verdict = '💎 Идеальная пара'; color = '#ffd700'; }
+        else if (sci >= 70) { verdict = '💚 Крепкий союз'; color = '#88ffaa'; }
+        else if (sci >= 55) { verdict = '💛 Неплохо'; color = '#ffcc66'; }
+        else if (sci >= 40) { verdict = '⚠️ Сомнительно'; color = '#ffaa66'; }
+        else { verdict = '💔 Несовместимы'; color = '#ff4444'; }
+        pairVerdict.textContent = verdict;
+        pairVerdict.style.border = `2px solid ${color}`;
+        pairVerdict.style.color = color;
+        updateRadar();
     }
-    
-    document.getElementById('vn').addEventListener('input', updateAllUI);
-    document.getElementById('x').addEventListener('input', updateAllUI);
-    document.getElementById('d').addEventListener('input', updateAllUI);
-    document.getElementById('kn').addEventListener('change', updateAllUI);
-    document.getElementById('kx').addEventListener('change', updateAllUI);
-    document.getElementById('kd').addEventListener('change', updateAllUI);
-    document.querySelectorAll('.redFlag').forEach(f => f.addEventListener('change', updateAllUI));
-    document.getElementById('saveBtn').addEventListener('click', saveMeasurement);
-    document.getElementById('resetHistoryBtn').addEventListener('click', resetHistory);
-    document.getElementById('setGoalBtn').addEventListener('click', updateAllUI);
-    
-    loadData();
+
+    function updateRadar() {
+        const b1 = parseFloat(p1Vn.value), c1 = parseFloat(p1X.value), d1 = parseFloat(p1D.value);
+        const b2 = parseFloat(p2Vn.value), c2 = parseFloat(p2X.value), d2 = parseFloat(p2D.value);
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        if (radarInstance) radarInstance.destroy();
+        radarInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Внешность', 'Характер', 'Анти-драма'],
+                datasets: [
+                    { label: 'Партнёр 1', data: [b1, c1 + 10, 10 - d1], borderColor: '#5f7aff', backgroundColor: 'rgba(95,122,255,0.15)', borderWidth: 2, pointRadius: 4 },
+                    { label: 'Партнёр 2', data: [b2, c2 + 10, 10 - d2], borderColor: '#ff7b9f', backgroundColor: 'rgba(255,123,159,0.15)', borderWidth: 2, pointRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                scales: { r: { beginAtZero: true, max: 20, ticks: { color: '#5b6b9b', font: { size: 8 } }, grid: { color: '#1a1f3a' }, pointLabels: { color: '#9aabdf', font: { size: 9 } } } },
+                plugins: { legend: { labels: { color: '#ccd6ff', font: { size: 9 } } } }
+            }
+        });
+    }
+
+    [p1Vn, p1X, p1D, p2Vn, p2X, p2D, pairAlpha, pairBeta, pairGamma].forEach(el => el.addEventListener('input', updatePair));
+    updatePair();
+
+    // ==================== НАСТРОЙКИ ====================
+    const inputModeSelect = document.getElementById('input-mode-select');
+    const stepSelect = document.getElementById('step-select');
+    const importStatus = document.getElementById('import-status');
+
+    inputModeSelect.addEventListener('change', () => {
+        setSoloMode(inputModeSelect.value);
+        localStorage.setItem('shauthi_mode', inputModeSelect.value);
+    });
+
+    stepSelect.addEventListener('change', () => {
+        currentStep = stepSelect.value;
+        [soloVn, soloX, soloD].forEach(el => el.step = currentStep);
+        [soloVnNum, soloXNum, soloDNum].forEach(el => el.step = currentStep);
+        localStorage.setItem('shauthi_step', currentStep);
+    });
+
+    document.getElementById('import-link-btn').addEventListener('click', () => {
+        const link = document.getElementById('import-link-input').value.trim();
+        if (!link) { importStatus.textContent = '⚠️ Вставьте ссылку'; importStatus.style.color = '#ffaa66'; return; }
+        if (importRaterToGroup(link)) {
+            importStatus.textContent = '✅ Оценщик импортирован в Группу!';
+            importStatus.style.color = '#88ffaa';
+            document.getElementById('import-link-input').value = '';
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="group"]').classList.add('active');
+            document.getElementById('group-tab').classList.add('active');
+        }
+    });
+
+    document.getElementById('paste-clipboard-btn').addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (importRaterToGroup(text)) {
+                importStatus.textContent = '✅ Импортирован из буфера!';
+                importStatus.style.color = '#88ffaa';
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="group"]').classList.add('active');
+                document.getElementById('group-tab').classList.add('active');
+            }
+        } catch(e) { importStatus.textContent = '❌ Не удалось прочитать буфер'; importStatus.style.color = '#ff4444'; }
+    });
+
+    document.getElementById('scan-qr-btn').addEventListener('click', startScanner);
+
+    // Загрузка сохранённых настроек
+    const savedMode = localStorage.getItem('shauthi_mode') || 'slider';
+    const savedStep = localStorage.getItem('shauthi_step') || '0.1';
+    inputModeSelect.value = savedMode;
+    stepSelect.value = savedStep;
+    currentStep = savedStep;
+    [soloVn, soloX, soloD].forEach(el => el.step = currentStep);
+    [soloVnNum, soloXNum, soloDNum].forEach(el => el.step = currentStep);
+    setSoloMode(savedMode);
+
+    // ==================== Telegram ====================
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
 </script>
 </body>
-</html>
+                </html>
